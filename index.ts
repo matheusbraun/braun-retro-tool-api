@@ -7,6 +7,7 @@ const cards: Array<{
   content: string;
   type: 'good' | 'wondering' | 'bad';
   likes: number;
+  roomId: string;
 }> = [];
 
 const typeDefs = `
@@ -20,18 +21,19 @@ const typeDefs = `
     user: String!
     content: String!
     type: CardType
-    likes: Int
+    likes: Int,
+    roomId: String!
   }
   type Query {
     cards: [Card!]
   }
   type Mutation {
-    postCard(user: String!, content: String!, type: String!): ID!
+    postCard(user: String!, content: String!, type: String!, roomId: String!): ID!
     deleteCard(id: String!): ID!
     increaseLikes(id: String!): ID!
   }
   type Subscription {
-    cards: [Card!]
+    cards(roomId: String!): [Card!]
   }
 `;
 
@@ -43,7 +45,7 @@ const resolvers = {
     cards: () => cards,
   },
   Mutation: {
-    postCard: (parent: any, { user, content, type }: any) => {
+    postCard: (parent: any, { user, content, type, roomId }: any) => {
       const id = uuid();
       cards.push({
         id,
@@ -51,6 +53,7 @@ const resolvers = {
         content,
         type,
         likes: 0,
+        roomId,
       });
       subscribers.forEach(fn => fn());
       return id;
@@ -85,8 +88,8 @@ const resolvers = {
   },
   Subscription: {
     cards: {
-      subscribe: (parent: any, args: any, { pubsub }: any) => {
-        const channel = Math.random().toString(36).slice(2, 15);
+      subscribe: (_, args, { pubsub }) => {
+        const channel = args.roomId;
         onCardUpdate(() => pubsub.publish(channel, { cards }));
         setTimeout(() => pubsub.publish(channel, { cards }), 0);
         return pubsub.asyncIterator(channel);
