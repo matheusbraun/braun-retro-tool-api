@@ -8,6 +8,7 @@ const cards: Array<{
   type: 'good' | 'wondering' | 'bad';
   likes: number;
   roomId: string;
+  isChecked: boolean;
 }> = [];
 
 const typeDefs = `
@@ -23,6 +24,7 @@ const typeDefs = `
     type: CardType
     likes: Int,
     roomId: String!
+    isChecked: Boolean
   }
   type Query {
     cards: [Card!]
@@ -31,6 +33,7 @@ const typeDefs = `
     postCard(user: String!, content: String!, type: String!, roomId: String!): ID!
     deleteCard(id: String!): ID!
     increaseLikes(id: String!): ID!
+    checkCard(id: String!): ID!
   }
   type Subscription {
     cards(roomId: String!): [Card!]
@@ -54,6 +57,7 @@ const resolvers = {
         type,
         likes: 0,
         roomId,
+        isChecked: false
       });
       subscribers.forEach(fn => fn());
       return id;
@@ -85,6 +89,19 @@ const resolvers = {
 
       return id;
     },
+    checkCard: (parent: any, { id }: any) => {
+      const card = cards.find(card => card.id === id);
+
+      if(card) {
+        const cardIndex = cards.indexOf(card);
+
+        cards[cardIndex] = { ...card, isChecked: !card.isChecked};
+
+        subscribers.forEach(fn => fn());
+      }
+
+      return id;
+    }
   },
   Subscription: {
     cards: {
